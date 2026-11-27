@@ -1,0 +1,30 @@
+{
+  "name": "nepal-payment-lab",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter './apps/*' dev",
+    "build": "bun run --filter './apps/*' build",
+    "typecheck": "tsc --project tsconfig.tools.json && bun run --filter '*' typecheck",
+    "test": "bun run test:unit && bun run test:integration",
+    "test:unit": "bun test ./apps/api/tests/unit ./packages/shared/tests ./apps/web/tests",
+    "test:integration": "bun test --preload ./apps/api/tests/integration/setup.ts ./apps/api/tests/integration ./packages/database/tests",
+    "test:e2e": "playwright test",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "db:generate": "bun run --filter @nepal-payment-lab/database db:generate",
+    "db:migrate": "bun run --filter @nepal-payment-lab/database db:migrate"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.13",
+    "typescript": "7.0.2",
+    "@types/bun": "1.4.2",
+    "@types/node": "22.20.2",
+    "@playwright/test": "1.63.0"
+  }
+}

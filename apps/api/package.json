@@ -1,0 +1,22 @@
+{
+  "name": "@nepal-payment-lab/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --target=bun --outdir=dist --packages=external",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "bun run --filter @nepal-payment-lab/database db:migrate"
+  },
+  "dependencies": {
+    "@nepal-payment-lab/database": "workspace:*",
+    "@nepal-payment-lab/shared": "workspace:*",
+    "express": "5.2.1",
+    "pino": "10.3.1",
+    "zod": "4.6.2"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6"
+  }
+}

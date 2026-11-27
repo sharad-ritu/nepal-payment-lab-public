@@ -1,0 +1,73 @@
+name: nepal-payment-lab
+services:
+  postgres:
+    image: postgres:18.6-bookworm
+    environment:
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: lab
+      POSTGRES_DB: nepal_payment_lab
+    ports: ["127.0.0.1:45175:5432"]
+    volumes: ["local-postgres-data:/var/lib/postgresql"]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U lab -d nepal_payment_lab"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  migrate:
+    build: &api-build
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: production
+    command: [bun, run, db:migrate]
+    environment:
+      DATABASE_URL: postgresql://lab:lab@postgres:5432/nepal_payment_lab
+    depends_on:
+      postgres:
+        condition: service_healthy
+  api:
+    build: *api-build
+    ports: ["127.0.0.1:45174:45174"]
+    environment:
+      PORT: "45174"
+      HOST: 0.0.0.0
+      WEB_ORIGIN: http://localhost:45173
+      DATABASE_URL: postgresql://lab:lab@postgres:5432/nepal_payment_lab
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, bun, -e, "const r = await fetch('http://localhost:45174/health'); process.exit(r.ok ? 0 : 1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: production
+    ports: ["127.0.0.1:45173:45173"]
+    environment:
+      API_INTERNAL_URL: http://api:45174
+      API_PUBLIC_URL: http://localhost:45174
+      NEXT_TELEMETRY_DISABLED: "1"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:45173/dashboard').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+  generate:
+    profiles: [tools]
+    build:
+      <<: *api-build
+      target: development
+    working_dir: /app
+    command: [bun, run, db:generate]
+    volumes:
+      - ./packages/database/src:/app/packages/database/src
+      - ./packages/database/migrations:/app/packages/database/migrations
+volumes:
+  local-postgres-data:
